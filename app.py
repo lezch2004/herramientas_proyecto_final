@@ -9,6 +9,22 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown("""
+<style>
+span[data-baseweb="tag"] {
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+span[data-baseweb="tag"] {
+    background-color: #2c76a4 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 #titulo
 st.title("Superstore Giant - Dashboard")
 st.markdown("---")
@@ -22,13 +38,34 @@ def cargar_datos():
 #cargar
 datos = cargar_datos()
 
+st.sidebar.header("Filtros")
+
+#seleccionar géneros
+gender = st.sidebar.multiselect(
+    "Selecciona los géneros: ",
+    options = sorted(datos["Region"].unique()),
+    default = sorted(datos["Region"].unique())
+)
+
+#seleccionar categoría
+categoria = st.sidebar.multiselect(
+    "Selecciona los géneros: ",
+    options = sorted(datos["Category"].unique()),
+    default = sorted(datos["Category"].unique())
+)
+
+filtered_data = datos[
+    (datos["Region"].isin(gender)) &
+    (datos["Category"].isin(categoria))
+]
+
 st.header("Métricas Generales")
 
 #calculo de metricas
-sales = datos["Sales"].sum()
-avg_discount = datos["Discount"].mean()
+sales = filtered_data["Sales"].sum()
+avg_discount = filtered_data["Discount"].mean()
 avg_discount *= 100
-profit = datos["Profit"].sum()
+profit = filtered_data["Profit"].sum()
 
 #creacion de columnas
 metric1, metric2, metric3 = st.columns(3)
@@ -42,8 +79,27 @@ with metric3:
     st.metric(label = "Average Discount (%)", value=f"{avg_discount:,.2f}%")
 
 st.markdown("---")
+st.header("Ventas y Ganancia por Región")
 
-st.header("Ventas por Región")
+region_df = (
+    filtered_data
+    .groupby("Region")[["Sales", "Profit"]]
+    .sum()
+    .reset_index()
+)
+
+fig1 = px.bar(
+    region_df,
+    x="Region",
+    y=["Sales", "Profit"],
+    barmode="group",
+    title="Análisis Regional de Ventas y Rentabilidad",
+    color_discrete_sequence=["#9ba1a6", "#2c76a4"]
+)
+
+st.plotly_chart(fig1, use_container_width=True)
+
+st.markdown("---")
 
 state_sales = datos.groupby("State")["Sales"].sum().reset_index()
 
@@ -67,6 +123,7 @@ us_state_abbrev = {
     'Wisconsin': 'WI', 'Wyoming': 'WY'
 }
 
+st.header("Ventas por Región")
 state_sales["State Code"] = state_sales["State"].map(us_state_abbrev)
 fig7 = px.choropleth(
     state_sales,
@@ -80,3 +137,6 @@ fig7 = px.choropleth(
 )
 
 st.plotly_chart(fig7)
+
+st.markdown("---")
+
