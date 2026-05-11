@@ -33,6 +33,8 @@ st.markdown("---")
 @st.cache_data
 def cargar_datos():
     df = pd.read_csv("superstore.csv", encoding="latin1")
+    df["Order Date"] = pd.to_datetime(df["Order Date"])
+    df["Ship Date"]  = pd.to_datetime(df["Ship Date"])
     return df
 
 #cargar
@@ -40,8 +42,19 @@ datos = cargar_datos()
 
 st.sidebar.header("Filtros")
 
+date_min = datos["Order Date"].min().date()
+date_max = datos["Order Date"].max().date()
+
+st.sidebar.markdown("**Rango de fechas**")
+start_date = st.sidebar.date_input("Desde", value=date_min, min_value=date_min, max_value=date_max)
+end_date   = st.sidebar.date_input("Hasta", value=date_max, min_value=date_min, max_value=date_max)
+
+if start_date > end_date:
+    st.sidebar.error("'Desde' debe ser anterior a 'Hasta'.")
+    st.stop()
+
 #seleccionar géneros
-gender = st.sidebar.multiselect(
+region = st.sidebar.multiselect(
     "Selecciona los géneros: ",
     options = sorted(datos["Region"].unique()),
     default = sorted(datos["Region"].unique())
@@ -49,13 +62,15 @@ gender = st.sidebar.multiselect(
 
 #seleccionar categoría
 categoria = st.sidebar.multiselect(
-    "Selecciona los géneros: ",
+    "Selecciona las categorías: ",
     options = sorted(datos["Category"].unique()),
     default = sorted(datos["Category"].unique())
 )
 
+#Seleccionar 
+
 filtered_data = datos[
-    (datos["Region"].isin(gender)) &
+    (datos["Region"].isin(region)) &
     (datos["Category"].isin(categoria))
 ]
 
@@ -66,9 +81,11 @@ sales = filtered_data["Sales"].sum()
 avg_discount = filtered_data["Discount"].mean()
 avg_discount *= 100
 profit = filtered_data["Profit"].sum()
+margin= (profit / sales * 100) if sales else 0
+orders  = filtered_data["Order ID"].nunique()
 
 #creacion de columnas
-metric1, metric2, metric3 = st.columns(3)
+metric1, metric2, metric3, metric4, metric5 = st.columns(5)
 
 #poner metricas
 with metric1:
@@ -77,6 +94,10 @@ with metric2:
     st.metric(label = "Ganancias Totales ($)", value=f"${profit:,.2f}")
 with metric3:
     st.metric(label = "Average Discount (%)", value=f"{avg_discount:,.2f}%")
+with metric4:
+    st.metric(label = "Margen Promedio (%)", value = f"{margin:.1f}%")
+with metric5:
+    st.metric(label= "Descuento Promedio", value = f"{avg_discount:.1f}%")
 
 st.markdown("---")
 st.header("Ventas y Ganancia por Región")
