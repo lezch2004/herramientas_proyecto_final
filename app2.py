@@ -178,6 +178,18 @@ st.divider()
 # ── Sección 6: Análisis Geográfico ───────────────────────────────────────────
 st.subheader("Los estados del sur concentran las mayores pérdidas por descuentos")
 
-# TODO: Gráfico 7 — px.choropleth mapa EEUU coloreado por Sales (o Profit) por State
-#       locationmode="USA-states", scope="usa"
-#       color_continuous_scale=[COLOR_LOSS, COLOR_BG, COLOR_PROFIT]
+state_sales["State Code"] = state_sales["State"].map(us_state_abbrev)
+fig7 = px.choropleth(
+    state_sales,
+    locations="State Code",
+    locationmode="USA-states",
+    color="Sales",
+    scope="usa",
+    hover_name="State",
+    color_continuous_scale="Blues",
+    title="Volumen de Ventas por Estado"
+)
+
+st.plotly_chart(fig7)
+
+st.markdown("---")
